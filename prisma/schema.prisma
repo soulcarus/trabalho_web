@@ -8,24 +8,26 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  matricula String   @unique
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  matricula String    @unique
+  email     String    @unique
   password  String
   name      String
-  role      Role     @default(STUDENT)
+  role      Role      @default(STUDENT)
+  campus    Campus
+  curso     Curso
   requests  Request[]
 }
 
 model Request {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
   type        String
-  status      Status   @default(PENDING)
+  status      Status    @default(PENDING)
   reason      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   documents   Document[]
 }
 
@@ -47,5 +49,17 @@ enum Status {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum Campus {
+  RUSSAS
+}
+
+enum Curso {
+  ENG_SOFTWARE
+  ENG_MECANICA
+  ENG_CIVIL
+  ENG_PRODUCAO
+  CIENCIA_COMPUTACAO
 }
 

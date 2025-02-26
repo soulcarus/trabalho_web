@@ -1,40 +1,84 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import type { NextApiRequest } from "next"
+import type { NextApiRequest } from "next/types"
 import jwt from "jsonwebtoken"
+import prisma from "./prisma"
 
-const AuthContext = createContext<{
-  user: any | null
+interface User {
+  id: string
+  email: string
+  name: string
+  role: string
+  matricula: string
+  curso: string
+  campus: string
+}
+interface AuthContextType {
+  user: User | null
+  setUser: (user: User | null) => void
+  login: (data: any) => Promise<User>
+  logout: () => void
+  register: (data: any) => Promise<User>
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  setUser: () => {},
+  login: async () => ({ id: "", email: "", name: "", role: "", matricula: "", curso: "", campus: "" }),
+  logout: () => {},
+  register: async () => ({ id: "", email: "", name: "", role: "", matricula: "", curso: "", campus: "" }),
+})
+
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+interface AuthContextProps {
+  user: {
+    id: number
+    name: string
+    role: string
+    matricula: string
+    curso: string
+    campus: string
+  } | null
   login: (data: any) => Promise<any>
   register: (data: any) => Promise<any>
   logout: () => void
-}>({
-  user: null,
-  login: async () => null,
-  register: async () => null,
-  logout: () => {},
-})
+}
 
-export function AuthProvider({ children }) {
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        setUser(decoded)
-      } catch (error) {
-        localStorage.removeItem("token")
-        setUser(null)
-      }
+      fetch("/api/auth/user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((userData) => {
+          if (userData.id) {
+            setUser(userData)
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching user data:", error)
+          localStorage.removeItem("token")
+        })
     }
   }, [])
 
-  const login = async (data) => {
+  const login = async (data: any) => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: {
@@ -42,19 +86,25 @@ export function AuthProvider({ children }) {
       },
       body: JSON.stringify(data),
     })
-
     const result = await response.json()
 
     if (response.ok) {
       localStorage.setItem("token", result.token)
-      setUser(result.user)
+      setUser({
+        id: result.user.id,
+        name: result.user.name,
+        role: result.user.role,
+        matricula: result.user.matricula,
+        curso: result.user.curso,
+        campus: result.user.campus,
+      })
       return result.user
     } else {
       throw new Error(result.message)
     }
   }
 
-  const register = async (data) => {
+  const register = async (data: any) => {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: {
@@ -62,12 +112,10 @@ export function AuthProvider({ children }) {
       },
       body: JSON.stringify(data),
     })
-
     const result = await response.json()
 
     if (response.ok) {
-      localStorage.setItem("token", result.token)
-      setUser(result.user)
+      router.push("/dashboard/estudante")
       return result.user
     } else {
       throw new Error(result.message)
@@ -80,12 +128,13 @@ export function AuthProvider({ children }) {
     router.push("/")
   }
 
-  return <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, setUser, login, logout, register }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)
 
-export function getSession(req: NextApiRequest) {
+
+export async function getSession(req: NextApiRequest) {
   const token = req.headers.authorization?.split(" ")[1]
 
   if (!token) {
@@ -93,8 +142,23 @@ export function getSession(req: NextApiRequest) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    return { user: decoded }
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not set")
+      return null
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: number }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, name: true, role: true, matricula: true, curso: true, campus: true },
+    })
+
+    if (!user) {
+      return null
+    }
+
+    return { user }
   } catch (error) {
     return null
   }

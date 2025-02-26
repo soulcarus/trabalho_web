@@ -6,12 +6,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth"
 import { toast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
   const [loginData, setLoginData] = useState({ matricula: "", password: "" })
-  const [registerData, setRegisterData] = useState({ matricula: "", email: "", password: "", name: "" })
+  const [registerData, setRegisterData] = useState({
+    matricula: "",
+    email: "",
+    password: "",
+    name: "",
+    campus: "RUSSAS",
+    curso: "",
+  })
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { login, register } = useAuth()
@@ -67,7 +75,7 @@ export default function LoginPage() {
             <TabsTrigger value="register">Registro</TabsTrigger>
           </TabsList>
           <TabsContent value="login">
-            <form onSubmit={handleLogin} className="mt-8 space-y-6">
+            <form onSubmit={handleLogin} className="mt-8 space-y-12">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="login-matricula">Matrícula</Label>
@@ -129,6 +137,35 @@ export default function LoginPage() {
                     onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                     required
                   />
+                </div>
+                <div>
+                  <Label htmlFor="register-campus">Campus</Label>
+                  <Select
+                    onValueChange={(value) => setRegisterData({ ...registerData, campus: value })}
+                    defaultValue="RUSSAS"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o campus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="RUSSAS">Russas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="register-curso">Curso</Label>
+                  <Select onValueChange={(value) => setRegisterData({ ...registerData, curso: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o curso" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ENG_SOFTWARE">Engenharia de Software</SelectItem>
+                      <SelectItem value="ENG_MECANICA">Engenharia Mecânica</SelectItem>
+                      <SelectItem value="ENG_CIVIL">Engenharia Civil</SelectItem>
+                      <SelectItem value="ENG_PRODUCAO">Engenharia de Produção</SelectItem>
+                      <SelectItem value="CIENCIA_COMPUTACAO">Ciência da Computação</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="register-password">Senha</Label>

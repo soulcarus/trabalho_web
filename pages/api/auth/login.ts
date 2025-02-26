@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" })
   }
 
-  const { matricula, password } = req.body
+  const { matricula, password } = req.body 
 
   try {
     const user = await prisma.user.findUnique({ where: { matricula } })
@@ -23,10 +23,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: "Invalid credentials" })
     }
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" })
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" })
 
-    res.status(200).json({ token, user: { id: user.id, name: user.name, role: user.role } })
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        matricula: user.matricula,
+        curso: user.curso,
+        campus: user.campus,
+      },
+    })
   } catch (error) {
+    console.error("Login error:", error)
     res.status(500).json({ message: "Something went wrong" })
   }
 }

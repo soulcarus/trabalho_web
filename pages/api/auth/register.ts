@@ -7,12 +7,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" })
   }
 
-  const { matricula, email, password, name } = req.body
+  const { matricula, email, password, name, campus, curso } = req.body
 
   try {
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [{ matricula }, { email }],
+        OR: [
+          {
+            matricula,
+          },
+          { email },
+        ],
       },
     })
 
@@ -28,6 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email,
         password: hashedPassword,
         name,
+        campus,
+        curso,
         role: "STUDENT",
       },
     })
@@ -36,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .status(201)
       .json({ message: "User created successfully", user: { id: user.id, name: user.name, role: user.role } })
   } catch (error) {
+    console.error("Registration error:", error)
     res.status(500).json({ message: "Something went wrong" })
   }
 }
